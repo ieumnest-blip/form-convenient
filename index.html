@@ -1438,9 +1438,9 @@
     <input type="text" id="saveNameInput" class="save-name-input" placeholder="저장할 이름 (비워두면 프로젝트명 사용)">
     <input type="text" id="saveMemoInput" class="save-memo-input" placeholder="메모 (선택사항)">
     <span class="request-sync-tabs">
-      <input type="hidden" data-field="requestSyncMode" id="requestSyncMode" value="sync">
-      <button type="button" class="request-sync-tab active" data-mode="sync">계약금액에 반영</button>
-      <button type="button" class="request-sync-tab" data-mode="separate">계약금액과 별도</button>
+      <input type="hidden" data-field="requestSyncMode" id="requestSyncMode" value="separate">
+      <button type="button" class="request-sync-tab" data-mode="sync">계약금액에 반영</button>
+      <button type="button" class="request-sync-tab active" data-mode="separate">계약금액과 별도</button>
     </span>
   </div>
   <button type="button" class="save" onclick="saveCurrent()">저장</button>
@@ -1680,7 +1680,7 @@
         <col class="rq5">
       </colgroup>
       <tr>
-        <th>발행일</th>
+        <th id="requestDateLabel" class="date-fill-th" title="클릭하면 오늘 날짜가 입력됩니다">발행일</th>
         <th>품 목</th>
         <th>공급가액</th>
         <th>부가세</th>
@@ -2481,7 +2481,7 @@ function alignRequestColumns() {
    탭 선택과 무관하게 항상 그대로 동작합니다. */
 function getRequestSyncMode() {
   const el = document.getElementById('requestSyncMode');
-  return el ? (el.value || 'sync') : 'sync';
+  return el ? (el.value || 'separate') : 'separate';
 }
 
 function setRequestSyncMode(mode) {
@@ -2559,6 +2559,36 @@ function moveRequestAmountsToPrior(mode) {
 
   recalcAllRows();
   showStatus(isAdd ? '발행 신청 정보 금액을 기 발행정보에 추가(합산)했습니다.' : '발행 신청 정보 금액을 기 발행정보로 반영했습니다.');
+}
+
+/* ── 진행현황 체크박스는 하나만 선택 ────────────────────────────────
+   하나를 체크하면 먼저 체크돼 있던 것은 자동으로 해제됩니다.
+   (이미 체크된 것을 다시 누르면 모두 해제된 상태가 됩니다.) */
+function initProgressSingleCheck() {
+  const boxes = document.querySelectorAll('input[name="progress"]');
+  boxes.forEach(function(cb) {
+    cb.addEventListener('change', function() {
+      if (!cb.checked) return;
+      boxes.forEach(function(other) {
+        if (other !== cb) other.checked = false;
+      });
+    });
+  });
+}
+
+/* ── "발행일" 글자를 누르면 오늘 날짜(YY.MM.DD)를 입력 ─────────── */
+function initRequestDateFill() {
+  const label = document.getElementById('requestDateLabel');
+  const input = document.querySelector('[data-field="requestDate"]');
+  if (!label || !input) return;
+  label.style.cursor = 'pointer';
+  label.addEventListener('click', function() {
+    const d = new Date();
+    const pad = function(n) { return String(n).padStart(2, '0'); };
+    input.value = pad(d.getFullYear() % 100) + '.' + pad(d.getMonth() + 1) + '.' + pad(d.getDate());
+    input.dispatchEvent(new Event('input', { bubbles: true }));
+    showStatus('발행일에 오늘 날짜를 입력했습니다.');
+  });
 }
 
 function initMoveRequestToPrior() {
@@ -3398,7 +3428,7 @@ function resetForm() {
     cb.checked = (i === 0);
   });
 
-  setRequestSyncMode('sync');
+  setRequestSyncMode('separate');
 
   recalcAllRows();
   layoutAllSplitRows();
@@ -4282,6 +4312,8 @@ function initAppAfterUnlock() {
   initRequestSyncTabs();
   initRequestToContractSync();
   initMoveRequestToPrior();
+  initProgressSingleCheck();
+  initRequestDateFill();
   initProjectNameToItemSync();
   initProjectToRecipientSync();
   initProjectNamePlaceholderDefaults();
