@@ -1278,6 +1278,15 @@
     background: #d40000;
   }
 
+  .move-to-prior-btn.add {
+    background: #0000ff;
+    border-color: #0000ff;
+  }
+
+  .move-to-prior-btn.add:hover {
+    background: #0000c8;
+  }
+
   .request-title-row:hover .move-to-prior-btn,
   .move-to-prior-btn:focus {
     opacity: 1;
@@ -1654,6 +1663,7 @@
   <div class="section-title request request-title-row">
     [  발행 신청 정보  ]
     <button type="button" class="move-to-prior-btn" id="moveToPriorBtn">기 발행정보로 반영</button>
+    <button type="button" class="move-to-prior-btn add" id="addToPriorBtn">기 발행정보에 추가반영(+)</button>
   </div>
 
   <div class="request-box" style="position: relative;">
@@ -2522,7 +2532,8 @@ function initRequestToContractSync() {
    기존 금액에 더하고(기 발행정보는 "이전 발행 내역합산"이므로 누적),
    발행 신청 정보의 금액 칸은 다음 발행을 위해 비웁니다. 계약금액
    칸은 건드리지 않습니다. */
-function moveRequestAmountsToPrior() {
+function moveRequestAmountsToPrior(mode) {
+  // mode === 'add' : 기 발행정보 금액에 더함 / 그 외 : 기 발행정보를 신청 금액으로 바꿈
   const reqSupply = document.querySelector('[data-field="requestSupply"]');
   const reqVat = document.querySelector('[data-field="requestVat"]');
   const priorSupply = document.querySelector('[data-field="priorSupply"]');
@@ -2537,8 +2548,9 @@ function moveRequestAmountsToPrior() {
     return;
   }
 
-  priorSupply.value = fmt(parseNum(priorSupply.value) + addSupply);
-  priorVat.value = fmt(parseNum(priorVat.value) + addVat);
+  const isAdd = (mode === 'add');
+  priorSupply.value = fmt((isAdd ? parseNum(priorSupply.value) : 0) + addSupply);
+  priorVat.value = fmt((isAdd ? parseNum(priorVat.value) : 0) + addVat);
   priorVat.dataset.touched = '1';
 
   reqSupply.value = '';
@@ -2546,12 +2558,14 @@ function moveRequestAmountsToPrior() {
   reqVat.dataset.touched = '';
 
   recalcAllRows();
-  showStatus('발행 신청 정보 금액을 기 발행정보에 반영했습니다.');
+  showStatus(isAdd ? '발행 신청 정보 금액을 기 발행정보에 추가(합산)했습니다.' : '발행 신청 정보 금액을 기 발행정보로 반영했습니다.');
 }
 
 function initMoveRequestToPrior() {
   const btn = document.getElementById('moveToPriorBtn');
-  if (btn) btn.addEventListener('click', moveRequestAmountsToPrior);
+  if (btn) btn.addEventListener('click', function() { moveRequestAmountsToPrior('replace'); });
+  const addBtn = document.getElementById('addToPriorBtn');
+  if (addBtn) addBtn.addEventListener('click', function() { moveRequestAmountsToPrior('add'); });
 }
 
 /* ── 프로젝트명 → 품목 자동 반영 ──────────────────────────────────
